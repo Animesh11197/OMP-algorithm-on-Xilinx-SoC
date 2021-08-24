@@ -1,0 +1,14 @@
+dlmwrite('data_A.dat',real(phi(:,:,5601)),'delimiter','\n')
+dlmwrite('data_A_i.dat',imag(phi(:,:,5601)),'delimiter','\n')
+dlmwrite('data_R_i.dat',imag(Y(:,:,5601)),'delimiter','\n')
+dlmwrite('data_R.dat',real(Y(:,:,5601)),'delimiter','\n')
+dlmwrite('Truth.dat',label_status(:,5601),'delimiter','\n')
+dlmwrite('K.dat',sum(label_status(:,5601)),'delimiter','\n')
+for i=5602:7000
+dlmwrite('data_A.dat',real(phi(:,:,i)),'-append','delimiter','\n')
+dlmwrite('data_A_i.dat',imag(phi(:,:,i)),'-append','delimiter','\n')
+dlmwrite('data_R_i.dat',imag(Y(:,:,i)),'-append','delimiter','\n')
+dlmwrite('data_R.dat',real(Y(:,:,i)),'-append','delimiter','\n')
+dlmwrite('Truth.dat',label_status(:,i),'-append','delimiter','\n')
+dlmwrite('K.dat',sum(label_status(:,i)),'-append','delimiter','\n')
+end
