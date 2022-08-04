@@ -1,5 +1,5 @@
 # OMP-algorithm
-This folder contains all the scipts and codes to implement OMP algorithm, both on MATLAB as well as on FPGA using High Level Synthesis.
+This folder contains all the scipts and codes to implement OMP algorithm, both on MATLAB as well as on Xilinx SoC [Tested on zc-706].
 
 CONTENTS:
 1. OMP_MATLAB.m - contains the MATLAB script to implement OMP algorithm on MATLAB.
