@@ -1,4 +1,4 @@
-# OMP-algorithm
+# OMP-algorithm on Xilinx SoC
 This folder contains all the scipts and codes to implement OMP algorithm, both on MATLAB as well as on Xilinx SoC [Tested on zc-706].
 
 CONTENTS:
