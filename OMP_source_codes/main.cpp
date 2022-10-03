@@ -490,6 +490,7 @@ void pseudo(float *matrix,float *matrix_i, int p, int k, float *pinv, float *pin
 
 			for (int z = 0; z < p; z++)
 			{
+				//------------define here:
 				matrix_mult[i * k + j] += (matrix[z * K + i] * matrix[z * K + j])-(-matrix_i[z * K + i] * matrix_i[z * K + j]);
 				matrix_mult_i[i * k + j] += (-matrix_i[z * K + i] * matrix[z * K + j]) + (matrix[z * K + i] * matrix_i[z * K + j]);
 
@@ -601,7 +602,7 @@ void update_As(float A1[P*N],float As[P*K],int k, int maxind)
 
 	for (int i = 0; i < P; i++)
 	{
-//#pragma HLS PIPELINE
+//#pragma HLS UNROLL
 
 		As[i*K + k] = A1[i*N + maxind];
 
@@ -701,47 +702,67 @@ void OMP_sw(float A[P*N], float A_i[P*N], float R[P*L], float R_i[P*L],int out[N
 }
 
 //HW OMP implementation
-void OMP_hw(float A[P*N], float A_i[P*N], float R[P*L], float R_i[P*L],int out[N],int iter)
+void OMP_hw(float A[P*N], float A_i[P*N], float local_R[P*L], float local_R_i[P*L],int out[N],int iter)
 {
-	float *A12 ;float *A1_i2;
+	float R[P*L];float R_i[P*L];
+	for(int i=0;i<P*L;i++)
+	{
+#pragma HLS UNROLL
+		R[i]=local_R[i];
+		R_i[i]=local_R_i[i];
+	}
+
+/*	float *A12 ;float *A1_i2;
 	A12 = (float *)sds_alloc((P*N)*sizeof(float));
-	A1_i2 = (float *)sds_alloc((P*N)*sizeof(float));
+	A1_i2 = (float *)sds_alloc((P*N)*sizeof(float));*/
+	float A12[P*N] ;float A1_i2[P*N];
+
 
 	//float *A = new float[P*N];
-	float *As2;	float *As_i2;
+/*	float *As2;	float *As_i2;
 	As2 = (float *)sds_alloc((P*K)*sizeof(float));
-	As_i2 = (float *)sds_alloc((P*K)*sizeof(float));
+	As_i2 = (float *)sds_alloc((P*K)*sizeof(float));*/
+	float As2[P*K];	float As_i2[P*K];
 
 	//initializing A1 (normalised A matrix)
-	INIT_A1(A,A_i,A12,A1_i2);
+	INIT_A1_hw(A,A_i,A12,A1_i2);
 	//display(A1, P, N);
 	//display(A1_i, P, N);
 
 
-	float *Ax2; float *Ax_i2;
+/*	float *Ax2; float *Ax_i2;
 	Ax2 = (float *)sds_alloc((P*L)*sizeof(float));
-	Ax_i2 = (float *)sds_alloc((P*L)*sizeof(float));
+	Ax_i2 = (float *)sds_alloc((P*L)*sizeof(float));*/
+	float Ax2[P*L]; float Ax_i2[P*L];
 
-	int *supp2;
-	supp2 = (int *)sds_alloc((K)*sizeof(int));
+/*	int *supp2;
+	supp2 = (int *)sds_alloc((K)*sizeof(int));*/
+	int supp2[K];
 
-	float *Z2;
-	Z2 = (float *)sds_alloc((N)*sizeof(float));
+
+/*	float *Z2;
+	Z2 = (float *)sds_alloc((N)*sizeof(float));*/
+	float Z2[N];
 
 
 	int maxind;
 	for (int k = 0; k < iter; k++)
 	{
-		float *pseudoinverse2;		float *pseudoinverse_i2;
+#pragma HLS loop_tripcount min=1 max=8
+/*		float *pseudoinverse2;		float *pseudoinverse_i2;
 		pseudoinverse2 = (float *)sds_alloc((K*P)*sizeof(float));
-		pseudoinverse_i2 = (float *)sds_alloc((K*P)*sizeof(float));
+		pseudoinverse_i2 = (float *)sds_alloc((K*P)*sizeof(float));*/
+		float pseudoinverse2[K*P];		float pseudoinverse_i2[K*P];
 
+/*
 		float *X2;		float *X_i2;
 		X2 = (float *)sds_alloc((K*L)*sizeof(float));
 		X_i2 = (float *)sds_alloc((K*L)*sizeof(float));
+*/
+		float X2[K*L];		float X_i2[K*L];
 
 
-		update_Z(A12, A1_i2, R, R_i, Z2);
+		update_Z_hw(A12, A1_i2, R, R_i, Z2);
 		//cout << "Z-->";
 		//display(Z, N, 1);
 
@@ -749,27 +770,27 @@ void OMP_hw(float A[P*N], float A_i[P*N], float R[P*L], float R_i[P*L],int out[N
 		//cout << "max--> " << maxind << endl;
 		supp2[k] = maxind;
 		out[maxind] = 1;
-		update_As(A12, As2, k, maxind);
-		update_As(A1_i2, As_i2, k, maxind);
+		update_As_hw(A12, As2, k, maxind);
+		update_As_hw(A1_i2, As_i2, k, maxind);
 
 		//display_row(As, As_i, P, K, k);
 
 		// FINDS PSEUDO INVERSE OF THE MATRIX
 		//display(As, P, k + 1);
-		pseudo(As2, As_i2, P, k + 1, pseudoinverse2, pseudoinverse_i2);
+		pseudo_(As2, As_i2, P, k + 1, pseudoinverse2, pseudoinverse_i2);
 		//completes the X=As\R operation
 		complexMatrixMult_hw(pseudoinverse2, pseudoinverse_i2, R, R_i, K, P, P, L, X2, X_i2);
 		//cout << "As\R-->\n"; display(X, k + 1, L); display(X_i, k + 1, L);
 
 
-		get_Ax(As2, As_i2, X2, X_i2, k, Ax2, Ax_i2);
+		get_Ax_hw(As2, As_i2, X2, X_i2, k, Ax2, Ax_i2);
 		//cout << "Ax-->\n"; display(Ax, P, L); display(Ax_i, P, L);
 
-		update_R(R, R_i, Ax2, Ax_i2);
-		cout << "\n-----\n";
+		update_R_hw(R, R_i, Ax2, Ax_i2);
+		//cout << "\n-----\n";
 		//display(supp2, 1, k + 1);
-		cout << "\nOUTPUT Bands\n";
-		display(out, 1, N);
+		//cout << "\nOUTPUT Bands\n";
+		//display(out, 1, N);
 		//cout << "R->\n";
 		//display(R, P, L); display(R_i, P, L);
 	}
@@ -858,8 +879,8 @@ int main()
 				fscanf(fin4, "%d", &inputsample4);
 				iter = inputsample4;
 		}
-	
-	int num=1;// range for num is 1-1400(dataset contains 1400 datapoints)
+
+	int num=1400;// range for num is 1-1400(dataset contains 1400 datapoints)
 	//Loop for running OMP for 'num' number of data-points
 	for (int x = 0; x < 1; x++) {
 		for (int i = 0; i < N; i++)
@@ -925,17 +946,17 @@ int main()
 					count++;
 				else
 					cout << "MISMATCH AT" << x << "th input \n";
-			}
-			cout << "\n\nAccuracy is " << (count / num) * 100;
+//			}
+/*			cout << "\n\nAccuracy is " << (count / num) * 100;
 			cout << "\n % Correctly predicted Occupancies:  " << (correct_predict / predicted) * 100;
-			cout << "\n BAND MATCH ACCURACY  " << (bandmatch / (num * 14)) * 100;
+			cout << "\n BAND MATCH ACCURACY  " << (bandmatch / (num * 14)) * 100;*/
 
 
-		/*cnt_start = sds_clock_counter(); //storing the time stamp of starting the hw function  call
-		OMP_sw(A2, A_i2, R2, R_i2,out2,iter);
+		cnt_start = sds_clock_counter(); //storing the time stamp of starting the hw function  call
+		OMP_hw(A2, A_i2, R2, R_i2,out2,iter);
 		cnt_stop = sds_clock_counter(); //storing the time stamp of starting the hw function  call
 		total_count_hw = total_count_hw + (cnt_stop-cnt_start);
-		display(golden_out, 1, 14);
+		//display(golden_out, 1, 14);
 		int check2=0;
 		for (int i = 0; i < N; i++)
 		{
@@ -946,23 +967,20 @@ int main()
 			count2++;
 		else
 			cout << "MISMATCH AT" << x << "th input \n";
-
-*/
-
-//}
-	//cout << "\n\nAccuracy_sw is " << count / 1400 * 100<<endl;
-	//cout << "\n\nAccuracy_hw is " << count / 1400 * 100<<endl;
+}
+	cout << "\n\nAccuracy_sw is " << (count / num) * 100<<endl;
+	cout << "\n\nAccuracy_hw is " << (count2 / num) * 100<<endl;
 
 /**/
 		uint64_t sw_cycles = total_count_sw; // calculating for the cycles taken by software multiplication
 		uint64_t hw_cycles = total_count_hw; // calculating for the cycles taken by hardware multiplication
-		//double speedup = (double) sw_cycles / (double) hw_cycles; // calculating the speedup
-		printf("\nAverage Number of SW Cycles: %" PRIu64 "\n", sw_cycles);
-		//printf("Average Number of HW Cycles: %" PRIu64 "\n", hw_cycles);
-		//printf("Average Improvement in Execution Time: %f\n", speedup);
-		printf("Clock frequency: %" PRIu64 "\n", frequency);
-		printf("Execution time of SW in seconds: %f\n", (double)sw_cycles/(double)sds_clock_frequency());
-		//printf("Average execution time of HW in seconds: %f\n", (double)hw_cycles/(double)sds_clock_frequency());
+		double speedup = (double) sw_cycles / (double) hw_cycles; // calculating the speedup
+		cout<<"\nAverage Number of SW Cycles"<< sw_cycles/num<<endl;
+		cout<<"\nAverage Number of HW Cycles"<< hw_cycles/num<<endl;
+		printf("Speedup: %f\n", speedup);
+		cout<<"Clock fr0equency: "<<frequency<<endl;
+		printf("Average execution time of SW in seconds: %f\n", (double)sw_cycles/(double)sds_clock_frequency());
+		printf("Average execution time of HW in seconds: %f\n", (double)hw_cycles/(double)sds_clock_frequency());
 
 
 	return 0;
