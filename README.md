@@ -8,7 +8,7 @@ CONTENTS:
 
 
 STEPS for running OMP code on FPGA would be :
-1. load the .MAT datasets into MATLAB workspace and then run the MAT_to_DAT.m script, this will create the .DAT data files in the same working directory of MATLAB.
-2. You will need to move these .DAT files along to the FPGA.
-3. Carefully set the target SoC and now build the source code files in Xilinx SDSoC and move the generated .elf file, BOOT.BIN file and the image.ub files into the FPGA.
+1. load the .MAT datasets into MATLAB workspace and then run the MAT_to_DAT.m script, this will create the .DAT data files in the same working directory of MATLAB. Or else you can simply load the required data files from "data_files.dat" .
+2. You will need to load these .DAT files along with SoC binary files.
+3. Carefully set the target SoC and now build the source code files in Xilinx SDSoC, using the OMP source codes and move the generated .elf file, BOOT.BIN file and the image.ub files into the SoC.
 4. After this we can reboot and run the specific executable file on Board.
