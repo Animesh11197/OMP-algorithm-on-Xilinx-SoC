@@ -4,7 +4,7 @@ This folder contains all the scipts and codes to implement OMP algorithm, both o
 CONTENTS:
 1. OMP_MATLAB.m - contains the MATLAB script to implement OMP algorithm on MATLAB.
 2. MAT_to_DAT.m - contains the MATLAB scipt for converting .mat datasets of different SNRs to create dataset files for our C code to read from.
-3. OMP_source_codes - contains the source code for implemtation of OMP on FPGA.
+3. OMP_source_codes - contains the source code for implemtation of OMP on FPGA. Also the description of every data file can be found in "main.cpp".
 
 
 STEPS for running OMP code on FPGA would be :
